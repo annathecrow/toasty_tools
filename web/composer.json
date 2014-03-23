@@ -1,0 +1,6 @@
+{
+    "require": {
+        "tumblr/tumblr": "dev-master",
+        "pear/console_commandline": "dev-trunk"
+    }
+}
