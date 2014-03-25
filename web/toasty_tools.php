@@ -15,7 +15,7 @@ function addtocount($item, &$counter) {
 		$counter[$item] = 1;
 	}
 }
- 
+
 
 //printpair
 function printpair($item,$count,$f) {
@@ -132,12 +132,20 @@ try {
     	exit("usage: get_tagstats.php <tagname> <numposts> <popularity threshold>\n");    	
     }
     
-    $client = new Tumblr\API\Client(
-		'J2LFXjvzHx7caT6fpKUwT8iZiwtB0xbLVEQoJAu61gNCVKdsqr', //consumer key
-		'fav8ZwwXWhdzJSvUdslCES015MA7mpq8HWVL5roJSRP3IIWBqg' //consumer secret
+	try {
+		$auth = file(".auth");
+		$key = trim($auth[0]);
+		$secret = trim($auth[1]);		
+	} catch (Exception $e) {
+		exit("error: unable to get key and secret from the .auth file");
+	}
+	$client = new Tumblr\API\Client(
+		$key, //consumer key
+		$secret //consumer secret
 		);
 $timestamps = array();
 $result = $client->getTaggedPosts($tagarg,array("limit"=>20));
+$earliest = $result[0]->timestamp;
 $typecount = array();
 $tagcount = array();
 $datecount = array();
@@ -157,8 +165,10 @@ for ($i =1;$i<$numposts/20;$i++) {
 			try {
 				$ts = $r->timestamp;
 				$timestamps[]=$ts;
-				$d = date('Y-m-d',$ts);
-				$hour = date('H',$ts);
+				$earliest = ($earliest>$ts)?$ts:$earliest;
+				$date = $r->date;
+				$d = substr($date,0,10);
+				$hour = substr($date,11,2);
 				addtocount($d, $datecount);
 				addtocount($hour, $hourcount);			
 			}
@@ -201,10 +211,8 @@ for ($i =1;$i<$numposts/20;$i++) {
 	catch (Exception $e) {
 		echo "bad result $num";	
 	}
-	asort($timestamps);
-	$earliest = $timestamps[0];	
+	echo count($result)."\n";
 	printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $outfile);	
-		
 	$result = $client->getTaggedPosts($tagarg,array("before"=>$earliest,"limit"=>20));
 	if (!$result) {
 		break;

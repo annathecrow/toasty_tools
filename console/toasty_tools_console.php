@@ -145,6 +145,7 @@ try {
 		);
 $timestamps = array();
 $result = $client->getTaggedPosts($tagarg,array("limit"=>20));
+$earliest = $result[0]->timestamp;
 $typecount = array();
 $tagcount = array();
 $datecount = array();
@@ -164,8 +165,10 @@ for ($i =1;$i<$numposts/20;$i++) {
 			try {
 				$ts = $r->timestamp;
 				$timestamps[]=$ts;
-				$d = date('Y-m-d',$ts);
-				$hour = date('H',$ts);
+				$earliest = ($earliest>$ts)?$ts:$earliest;
+				$date = $r->date;
+				$d = substr($date,0,10);
+				$hour = substr($date,11,2);
 				addtocount($d, $datecount);
 				addtocount($hour, $hourcount);			
 			}
@@ -208,10 +211,8 @@ for ($i =1;$i<$numposts/20;$i++) {
 	catch (Exception $e) {
 		echo "bad result $num";	
 	}
-	asort($timestamps);
-	$earliest = $timestamps[0];	
+	echo count($result)."\n";
 	printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $outfile);	
-		
 	$result = $client->getTaggedPosts($tagarg,array("before"=>$earliest,"limit"=>20));
 	if (!$result) {
 		break;
