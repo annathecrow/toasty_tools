@@ -1,6 +1,5 @@
 <?php 
 include_once("vendor/autoload.php");
-//echo $argv[1];
 
 function testRes($val = true) {
 	return !$val;
@@ -100,38 +99,60 @@ function printpost($postdata,$outfile) {
 
 /* main function */
 
-try {
-    	$tagarg = $argv[1];
-    	$numposts = $argv[2];
-    	$threshold = $argv[3];
-		if (!isset($tagarg)) {
-			throw new Exception();
-			
-		} elseif (!isset($numposts)) {
-			throw new Exception();
-			
-		} elseif (!isset($threshold)) {
-			throw new Exception();
-			
+$cmd = new Commando\Command();
+$cmd->option()
+	->require()
+	->describedAs('tag')
+->referToAs('tag');
+$cmd->option()
+	->require()
+	->must(function($value){
+		if (is_numeric($value)) {
+			return true;
 		} else {
-			$folder = "output";
-			if(!file_exists($folder)) {
-				mkdir($folder,0755,true);
-			} elseif (file_exists($folder)&&!is_dir($folder)){
-				$folder = $folder."_1";
-				mkdir($folder,0755,true);
-			};
-			$outfile = $folder."/".$tagarg."_stats.csv";
-			$postfile = $folder."/".$tagarg."_posts.csv";
-			
-	    	$file = fopen($postfile,"w");
-	    	fwrite($file,"id, blog, url, timestamp, date, notes, type, slug, tags\n");
-	    	fclose($file);				
-		};
-    	
+			return false;
+		}
+	})
+	->describedAs('number of posts to fetch')
+	->referToAs('number of posts');
+$cmd->option('f')
+	->aka('frequency')
+	->must(function($value){
+		if (is_numeric($value)) {
+			return true;
+		} else {
+			return false;
+		}
+	})
+	->describedAs('frequency threshold of listed tags');
+$cmd->option('m')
+	->aka('multi')
+	->boolean()
+	->describedAs('make sure multiple posts by single user are fetched (slower)');
+$tagarg = $cmd[0];
+$numposts = $cmd[1];
+$threshold = $cmd['frequency'];
+if($cmd['m']) {
+	define("BATCH",3);
+} else {
+	define("BATCH",20);
+}
+try {
+	$folder = "output";
+	if(!file_exists($folder)) {
+		mkdir($folder,0755,true);
+	} elseif (file_exists($folder)&&!is_dir($folder)){
+		$folder = $folder."_1";
+		mkdir($folder,0755,true);
+	};
+	$outfile = $folder."/".$tagarg."_stats.csv";
+	$postfile = $folder."/".$tagarg."_posts.csv";
+	$file = fopen($postfile,"w");
+	fwrite($file,"id, blog, url, timestamp, date, notes, type, slug, tags\n");
+	fclose($file);	
     }
     catch (Exception $e) {
-    	exit("usage: get_tagstats.php <tagname> <numposts> <popularity threshold>\n");    	
+    	exit("error: couldn't write file\n");    	
     }
     
 	try {
@@ -141,21 +162,23 @@ try {
 	} catch (Exception $e) {
 		exit("error: unable to get key and secret from the .auth file");
 	}
-	$client = new Tumblr\API\Client(
-		$key, //consumer key
-		$secret //consumer secret
-		);
+$client = new Tumblr\API\Client(
+	$key, //consumer key
+	$secret //consumer secret
+);
+
+
 $timestamps = array();
-$result = $client->getTaggedPosts($tagarg,array("limit"=>20));
+$result = $client->getTaggedPosts($tagarg,array("limit"=>BATCH));
+
 $earliest = $result[0]->timestamp;
 $typecount = array();
 $tagcount = array();
 $datecount = array();
 $hourcount = array();
 	
-for ($i =1;$i<$numposts/20;$i++) {
-	echo "$i\n";
-	
+while (count($timestamps) <= $numposts) {
+	echo count($timestamps)." -- ";
 	try {
 		$num = 0;
 		
@@ -213,9 +236,9 @@ for ($i =1;$i<$numposts/20;$i++) {
 	catch (Exception $e) {
 		echo "bad result $num";	
 	}
-	echo count($result)."\n";
+	echo "posts fetched: ".count($result)."\n";
 	printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $outfile);	
-	$result = $client->getTaggedPosts($tagarg,array("before"=>$earliest,"limit"=>20));
+	$result = $client->getTaggedPosts($tagarg,array("before"=>$earliest,"limit"=>BATCH));
 	if (!$result) {
 		break;
 	}

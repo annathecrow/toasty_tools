@@ -1,5 +1,6 @@
 {
     "require": {
-        "tumblr/tumblr": "dev-master"
+        "tumblr/tumblr": "dev-master",
+        "nategood/commando": "*"
     }
 }

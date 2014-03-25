@@ -11,4 +11,6 @@ return array(
     'Guzzle\\Tests' => array($vendorDir . '/guzzle/guzzle/tests'),
     'Guzzle' => array($vendorDir . '/guzzle/guzzle/src'),
     'Eher\\OAuth' => array($vendorDir . '/eher/oauth/src'),
+    'Commando' => array($vendorDir . '/nategood/commando/src'),
+    'Colors' => array($vendorDir . '/kevinlebrun/colors.php/lib'),
 );
