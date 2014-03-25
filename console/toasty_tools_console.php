@@ -27,7 +27,7 @@ function printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $ou
 	$f = fopen($outfile,"w");
 	
 	fwrite($f,"******* TYPES:\n");
-	asort($typecount);
+	arsort($typecount,SORT_NUMERIC);
 	foreach ($typecount as $type=>$amount) {
 		printpair($type,$amount,$f);
 	}
@@ -39,11 +39,13 @@ function printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $ou
 	}	
 	
 	fwrite($f,"******* HOURS:\n");
+	ksort($hourcount);
 	foreach ($hourcount as $hour=>$amount) {
 		printpair($hour,$amount,$f);
 	}
 	fwrite($f,"******* TAGS:\n");
-	ksort($tagcount);	
+	arsort($tagcount,SORT_NUMERIC);
+	array_shift($tagcount);	
 	foreach ($tagcount as $tag=>$amount) {
 		if ($amount>= $threshold) {
 			printpair($tag,$amount,$f);
