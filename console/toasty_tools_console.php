@@ -51,7 +51,7 @@ function printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $ou
 		}
 	}
 	//
-	
+	fclose($f);
 }
 
 //trytoprint
@@ -137,7 +137,7 @@ if($cmd['m']) {
 } else {
 	define("BATCH",20);
 }
-try {
+
 	$folder = "output";
 	if(!file_exists($folder)) {
 		mkdir($folder,0755,true);
@@ -147,13 +147,22 @@ try {
 	};
 	$outfile = $folder."/".$tagarg."_stats.csv";
 	$postfile = $folder."/".$tagarg."_posts.csv";
+	$logfile = $folder."/".$tagarg.".log";
+try {
 	$file = fopen($postfile,"w");
 	fwrite($file,"id, blog, url, timestamp, date, notes, type, slug, tags\n");
 	fclose($file);	
-    }
-    catch (Exception $e) {
-    	exit("error: couldn't write file\n");    	
-    }
+}
+	catch (Exception $e) {
+	exit("error: couldn't write postfile\n");    	
+}
+
+try {
+	$log = fopen($logfile,"w+");
+	fwrite($log,"round, date, number of posts fetched\n");
+} catch (Exception $e) {
+	exit("cannot write log file\n");
+}
     
 	try {
 		$auth = file(".auth");
@@ -170,20 +179,20 @@ $client = new Tumblr\API\Client(
 
 $timestamps = array();
 $result = $client->getTaggedPosts($tagarg,array("limit"=>BATCH));
-
 $earliest = $result[0]->timestamp;
+$round = 1;
 $typecount = array();
 $tagcount = array();
 $datecount = array();
 $hourcount = array();
 	
 while (count($timestamps) <= $numposts) {
-	echo count($timestamps)." -- ";
+	echo ".";
 	try {
-		$num = 0;
-		
+		$num = 0;		
 		foreach ($result as $r) {
 			$num++;
+			
 			
 			//timestamps
 			
@@ -236,11 +245,14 @@ while (count($timestamps) <= $numposts) {
 	catch (Exception $e) {
 		echo "bad result $num";	
 	}
-	echo "posts fetched: ".count($result)."\n";
-	printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $outfile);	
+	printall($typecount, $tagcount, $datecount, $hourcount, $threshold, $outfile);
+	fwrite($log,$round.", ".$result[0]->date.", ".count($result)."\n");	
 	$result = $client->getTaggedPosts($tagarg,array("before"=>$earliest,"limit"=>BATCH));
+	$round++;
 	if (!$result) {
 		break;
 	}
 }
+echo "\n";
+fclose($log);
 ?>
