@@ -1,6 +1,8 @@
 toasty_tools
 ============
 
+Here's my update to readme! I don't think it's very helpful.
+
 Very early stage of a Tumblr API tool for generating fandom statistics. 
 
 Notes:
